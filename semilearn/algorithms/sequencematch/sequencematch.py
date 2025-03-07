@@ -66,6 +66,11 @@ class SequenceMatch(AlgorithmBase):
                 outputs = self.model(inputs)
                 logits_x_lb = outputs['logits'][:num_lb]
                 logits_x_ulb_w, logits_x_ulb_m, logits_x_ulb_s = outputs['logits'][num_lb:].chunk(3)
+                
+                feat_dict = {
+                'feat_lb': outputs.get('feat', torch.Tensor())[:num_lb],
+                'feat_ulb': outputs.get('feat', torch.Tensor())[num_lb:],
+                }
             else:
                 outs_x_lb = self.model(x_lb) 
                 logits_x_lb = outs_x_lb['logits']
@@ -73,9 +78,16 @@ class SequenceMatch(AlgorithmBase):
                 logits_x_ulb_m = outs_x_ulb_m['logits']
                 outs_x_ulb_s = self.model(x_ulb_s)
                 logits_x_ulb_s = outs_x_ulb_s['logits']
-                with torch.no_grad():
-                    outs_x_ulb_w = self.model(x_ulb_w)
-                    logits_x_ulb_w = outs_x_ulb_w['logits']
+                
+                feat_dict = {
+                    'feat_lb': outs_x_lb.get('feat', torch.Tensor()),
+                    'feat_ulb_m': outs_x_ulb_m.get('feat', torch.Tensor()),
+                    'feat_ulb_s': outs_x_ulb_s.get('feat', torch.Tensor()),
+                }
+            
+            with torch.no_grad():
+                outs_x_ulb_w = self.model(x_ulb_w)
+                logits_x_ulb_w = outs_x_ulb_w['logits']
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
